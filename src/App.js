@@ -31,7 +31,7 @@ function App() {
     const resp = await fetch("http://192.168.1.16:3031/forecast/hourly", requestOptions);
 
     if (!resp.ok) {
-      const msg = `Shit happened: ${resp.status} ${await resp.text()}`;
+      const msg = `Something happened: ${resp.status} ${await resp.text()}`;
       throw new Error(msg);
     }
 
@@ -54,7 +54,7 @@ function App() {
     const resp = await fetch("http://192.168.1.16:3031/forecast/daily", requestOptions);
 
     if (!resp.ok) {
-      const msg = `Shit happened: ${resp.status} ${await resp.text()}`;
+      const msg = `Something happened: ${resp.status} ${await resp.text()}`;
       throw new Error(msg);
     }
 
@@ -144,7 +144,7 @@ function App() {
   function getMoonImg(phase) {
     switch(phase)
     {
-        case "new":
+        case "New":
           return "assets/new-moon-phase-circle.png";
         case "Waxing_Crescent":
           return "assets/moon-phase-interface-symbol.png";
