@@ -1,3 +1,8 @@
+
+![image](https://github.com/dukedvl/househub-react/assets/9894325/c54e5c87-3996-4320-9347-0723eba77fa5)
+
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
