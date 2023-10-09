@@ -44,4 +44,44 @@
 .border {
   border-top: 1px solid #e5e5e5;
   border-bottom: 1px solid #e5e5e5;
+  border-collapse:collapse;
+}
+
+.dataTable{
+  border-collapse:collapse;
+  border:1px solid;
+  padding:10px;
+}
+
+td,tr,th{
+  padding: 10px;
+  border:1px solid;
+}
+
+.layoutTable{
+  border:0px;
+  border-color:white;
+  padding:20px;
+  vertical-align:top;
+}
+
+.timestamp{
+  color:dimgray;
+  font-size:10px;
+  float:right;
+}
+
+.greenbubble{
+  height: 10px;
+  width:10px;
+  background-color:green;
+  border-radius:50%;
+  display: inline-block;
+}
+.redbubble{
+  height: 10px;
+  width:10px;
+  background-color:darkred;
+  border-radius:50%;
+  display: inline-block;
 }

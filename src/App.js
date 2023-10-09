@@ -12,7 +12,18 @@ function App() {
   const [dailyHigh, setDailyHigh] = useState(0);
   const [dailyLow, setDailyLow] = useState(0);
 
-  const [today, setToday]=useState(0);
+  const [today, setToday] = useState(0);
+  const [lastHourlyPull, setLastHourlyPull] = useState(0);
+  const [lastDailyPull, setLastDailyPull] = useState(0);
+
+  const [healthStatus, setHealthStatus] = useState(0);
+  const [healthStatusTime, setHealthStatusTime] = useState(0);
+
+  const [inst, setInst] = useState(0);
+  const [instTimestamp, setInstTimestamp] = useState(0);
+
+  let forecastURL = "192.168.1.5";
+  let forecastPort = 3031;
 
   useEffect(() => {
     loadData();
@@ -21,6 +32,7 @@ function App() {
   async function loadData() {
     await getDaily();
     await getWeather();
+    await getInst();
   }
 
   async function getWeather() {
@@ -28,7 +40,7 @@ function App() {
       method: 'get'
     };
 
-    const resp = await fetch("http://192.168.1.16:3031/forecast/hourly", requestOptions);
+    const resp = await fetch(`http://${forecastURL}:${forecastPort}/forecast/hourly`, requestOptions);
 
     if (!resp.ok) {
       const msg = `Something happened: ${resp.status} ${await resp.text()}`;
@@ -43,7 +55,31 @@ function App() {
     setDailyHigh(Math.max.apply(Math, dailyTemps));
     setDailyLow(Math.min.apply(Math, dailyTemps));
     setDailyMedian(dailyTemps.reduce((a, b) => a + b, 0) / dailyTemps.length);
+    setLastHourlyPull(weatherdata[0].created_at);
 
+    const health = await fetch(`http://${forecastURL}:${forecastPort}/forecast/healthcheck`, requestOptions);
+    setHealthStatus(health.statusText);
+    if (health.status == 200) {
+      setHealthStatusTime(DateTime.now());
+    }
+  }
+
+  async function getInst() {
+    var requestOptions = {
+      method: 'get'
+    };
+
+    const resp = await fetch(`http://${forecastURL}:${forecastPort}/forecast/instant`, requestOptions);
+
+    if (!resp.ok) {
+      const msg = `Something happened: ${resp.status} ${await resp.text()}`;
+      throw new Error(msg);
+    }
+
+    const weatherdata = await resp.json();
+
+    setInst(weatherdata.observations[0].imperial.temp);
+    setInstTimestamp(weatherdata.observations[0].obsTimeUtc);
   }
 
   async function getDaily() {
@@ -51,7 +87,7 @@ function App() {
       method: 'get'
     };
 
-    const resp = await fetch("http://192.168.1.16:3031/forecast/daily", requestOptions);
+    const resp = await fetch(`http://${forecastURL}:${forecastPort}/forecast/daily`, requestOptions);
 
     if (!resp.ok) {
       const msg = `Something happened: ${resp.status} ${await resp.text()}`;
@@ -61,9 +97,15 @@ function App() {
     const weatherdata = await resp.json();
     setDaily(weatherdata);
 
-    setToday(weatherdata.filter(day=> DateTime.fromISO(day.weather_time).hasSame(DateTime.now(), 'day'))[0]);
+    setToday(weatherdata.filter(day => DateTime.fromISO(day.weather_time).hasSame(DateTime.now(), 'day'))[0]);
+    setLastDailyPull(weatherdata[0].created_at);
 
-    console.log(JSON.stringify(weatherdata));
+    const health = await fetch(`http://${forecastURL}:${forecastPort}/forecast/healthcheck`, requestOptions);
+    setHealthStatus(health.statusText);
+
+    if (health.status == 200) {
+      setHealthStatusTime(DateTime.now());
+    }
   }
 
   function getDisplayString(string) {
@@ -75,7 +117,7 @@ function App() {
     //return "assets/001-sunny.png";
     let dayTime = true;
 
-    if (timeOfDay != null && today!=null) {
+    if (timeOfDay != null && today != null) {
       let hour = DateTime.fromISO(timeOfDay).hour;
       dayTime = hour > DateTime.fromISO(today.sunrise_time).hour && hour < DateTime.fromISO(today.sunset_time).hour;
     }
@@ -118,7 +160,7 @@ function App() {
     }
 
     return dayTime ? "assets/001-sunny.png" : "assets/008-full moon.png";
-    
+
   }
 
   function getDailyHiLowGradient(temp) {
@@ -142,41 +184,41 @@ function App() {
   }
 
   function getMoonImg(phase) {
-    switch(phase)
-    {
-        case "New":
-          return "assets/new-moon-phase-circle.png";
-        case "Waxing_Crescent":
-          return "assets/moon-phase-interface-symbol.png";
-        case "First_Quarter":
-          return "assets/half-moon-phase-symbol.png";
-        case "Waxing_Gibbous":
-          return "assets/moon-phase-symbol-9.png";
-        case "Full":
-          return "assets/moon-phase.png";
-        case "Waning_Gibbous":
-          return "assets/moon-phase-symbol-14.png";
-        case "Third_Quarter":
-          return "assets/moon-phase-symbol-3.png";
-        case "Waning_Crescent":
-          return "assets/moon-phase-symbol-12.png";
-        default:
-          return "assets/new-moon-phase-circle.png";
+    switch (phase) {
+      case "New":
+        return "assets/new-moon-phase-circle.png";
+      case "Waxing_Crescent":
+        return "assets/moon-phase-interface-symbol.png";
+      case "First_Quarter":
+        return "assets/half-moon-phase-symbol.png";
+      case "Waxing_Gibbous":
+        return "assets/moon-phase-symbol-9.png";
+      case "Full":
+        return "assets/moon-phase.png";
+      case "Waning_Gibbous":
+        return "assets/moon-phase-symbol-14.png";
+      case "Third_Quarter":
+        return "assets/moon-phase-symbol-3.png";
+      case "Waning_Crescent":
+        return "assets/moon-phase-symbol-12.png";
+      default:
+        return "assets/new-moon-phase-circle.png";
     };
-    
+
   }
 
   return (
     <div className="App">
       <h1>Weather Data</h1>
-      <table align="center" cellPadding="20">
+      <h3>{inst} °F <span className='timestamp' style={{float:'none'}}>({DateTime.fromISO(instTimestamp).toLocaleString(DateTime.TIME_SIMPLE)})</span></h3>
+      <table className="layoutTable" align="center" >
         <tr>
-          <td style={{ verticalAlign: "top" }}>
-
+          <td className="layoutTable">
             {/*Daily Table*/}
-            <table cellPadding="10" border="1" >
+            <br />
+            <table className="dataTable">
               <thead>
-                <tr><th colSpan="4">7-day Forecast</th></tr>
+                <tr><th colSpan="4">7-day Forecast <span className='timestamp'>{new Date(lastDailyPull).toLocaleDateString("en-us", { hour: "2-digit", minute: "2-digit" })}</span></th></tr>
                 <tr>
                   <th>Day</th>
                   <th>Hi-Lo</th>
@@ -199,27 +241,32 @@ function App() {
             </table>
           </td>
 
-          <td>
+          <td className="layoutTable">
             {/*Hourly Table*/}
-            <table cellPadding="10" border="1" >
+            <span className='timestamp'>Health Status: <span className={healthStatus == 'OK' ? 'greenbubble' : 'redbubble'} />{healthStatus} ({new Date(healthStatusTime).toLocaleDateString("en-us", { hour: "2-digit", minute: "2-digit" })})</span><br />
+            <table className="dataTable">
               <thead>
-                <tr><th colSpan="7">Hourly (24h)
-                {(()=>{
-
+                <tr><th colSpan="7" verticalAlign="center">{new Date(today.weather_time).toLocaleDateString("en-us", { month: "2-digit", day: "2-digit" })} (Hourly)
+                  {(() => {
                     const sunRiseTime = DateTime.fromISO(today.sunrise_time);
                     const sunSetTime = DateTime.fromISO(today.sunset_time);
-                    const duration = Interval.fromDateTimes(sunRiseTime,sunSetTime).length('minutes');
-                    let durationStr = `${(duration /60).toFixed()}h ${duration%60}m`;
-                    return <span style={{ color: "black", fontSize: "small", float: "right" }}><span style={{ color: "dimgrey", fontSize: "xx-small" }}>{durationStr}</span>  <img src="assets/015-sunrise.png" height="25" width="25" /> {sunRiseTime.toLocaleString(DateTime.TIME_SIMPLE)} <img src="assets/016-sunset.png" height="25" width="25" /> {sunSetTime.toLocaleString(DateTime.TIME_SIMPLE)} </span>;
+                    const duration = Interval.fromDateTimes(sunRiseTime, sunSetTime).length('minutes');
+                    let durationStr = `${(duration / 60).toFixed()}h ${duration % 60}m`;
+                    return (<span style={{ color: "black", fontSize: "small", float: "right" }}>
+                      <span className='timestamp'>{new Date(lastHourlyPull).toLocaleDateString("en-us", { hour: "2-digit", minute: "2-digit" })}</span>
+                      <br />
+                      <span style={{ color: "dimgrey", fontSize: "xx-small" }}>{durationStr}</span>&nbsp;
+                      <img src="assets/015-sunrise.png" height="25" width="25" /> {sunRiseTime.toLocaleString(DateTime.TIME_SIMPLE)}
+                      <img src="assets/016-sunset.png" height="25" width="25" /> {sunSetTime.toLocaleString(DateTime.TIME_SIMPLE)} </span>);
                   })()
-              }
-              </th></tr>
+                  }
+                </th></tr>
                 <tr>
                   <th>Hour</th>
                   <th>Temp</th>
                   <th>Weather</th>
                   <th>Feel</th>
-                 {/*<th>Precipitation</th>*/}
+                  {/*<th>Precipitation</th>*/}
                   <th>Humidity</th>
                   <th>Dew Point</th>
                 </tr>
@@ -244,7 +291,7 @@ function App() {
         </tr>
       </table>
       <div> Weather icons made by <a href="https://www.flaticon.com/authors/smashicons" title="Smashicons">Smashicons</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
-<div>Moon icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+      <div>Moon icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
     </div>
   );
 
